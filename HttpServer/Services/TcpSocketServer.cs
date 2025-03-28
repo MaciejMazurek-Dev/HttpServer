@@ -22,7 +22,7 @@ namespace HttpServer.Services
             IPAddress ipAddress = IPAddress.Parse(ipString);
             IPEndPoint serverIpEndPoint = new(ipAddress, port);
             _serverSocket.Bind(serverIpEndPoint);
-            _serverSocket.Listen(10);
+            _serverSocket.Listen();
 
             using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -35,28 +35,15 @@ namespace HttpServer.Services
 
         public void StartServer()
         {
-            _logger.LogDebug("Logger initialized.");
-
-            Socket connectionHandler = _serverSocket.Accept();
+            _logger.LogInformation("Server state: UP");
+            _logger.LogInformation($"Listening for connections on address: {_serverSocket.LocalEndPoint}");
             isRunning = true;
 
-            _logger.LogInformation("Server state: UP");
-            _logger.LogInformation($"Listening for connections on address: {connectionHandler.LocalEndPoint}");
             while (isRunning)
             {
-                byte[] buffer = new byte[1024];
-                int bytesCount = connectionHandler.Receive(buffer);
-                if (bytesCount > 0)
-                {
-                    string received = Encoding.ASCII.GetString(buffer);
-
-                    _logger.LogDebug($"Data received from: {connectionHandler.RemoteEndPoint}\n{received}");
-                }
-
-
-                string responseMessage = $"Message received - {bytesCount} bytes";
-                byte[] response = Encoding.ASCII.GetBytes(responseMessage);
-                connectionHandler.Send(response);
+                Socket client = _serverSocket.Accept();
+                _logger.LogInformation("Client connected: " + client.RemoteEndPoint);
+                HandleClient(client);
             }
         }
 
@@ -64,7 +51,19 @@ namespace HttpServer.Services
         {
             isRunning = false;
             _serverSocket.Shutdown(SocketShutdown.Both);
-            Console.WriteLine("Server shutdown...");
+            _logger.LogInformation("Server state: DOWN");
+        }
+
+        public void HandleClient(Socket client)
+        {
+            byte[] buffer = new byte[1024];
+            int bytesReceived = client.Receive(buffer);
+            if (bytesReceived > 0)
+            {
+                string received = Encoding.UTF8.GetString(buffer);
+
+                _logger.LogDebug($"Data received from: {client.RemoteEndPoint}\n{received}");
+            }
         }
     }
 }
