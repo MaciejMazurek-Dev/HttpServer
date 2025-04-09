@@ -1,6 +1,8 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using HttpServer.Internal.Http;
+using HttpServer.Models;
 using Microsoft.Extensions.Logging;
 
 namespace HttpServer.Services
@@ -13,6 +15,7 @@ namespace HttpServer.Services
                                         ProtocolType.Tcp);
         private bool isRunning = false;
         private readonly ILogger _logger;
+        private readonly HttpParser _httpParser = new();
 
         public TcpSocketServer() : this(IPAddress.Loopback.ToString(), 5050)
         {
@@ -56,14 +59,18 @@ namespace HttpServer.Services
 
         public void HandleClient(Socket client)
         {
+            List<byte> dataReceived = new();
             byte[] buffer = new byte[1024];
-            int bytesReceived = client.Receive(buffer);
-            if (bytesReceived > 0)
+            int sizeOfDataReceived = client.Receive(buffer);
+            if (sizeOfDataReceived > 0)
             {
-                string received = Encoding.UTF8.GetString(buffer);
-
-                _logger.LogDebug($"Data received from: {client.RemoteEndPoint}\n{received}");
+                dataReceived.AddRange(buffer);
             }
+            HttpRequest httpRequest = _httpParser.ParseRequest(dataReceived.ToArray<byte>());
+            Console.WriteLine(httpRequest.Method);
+            Console.WriteLine(httpRequest.Version);
+            Console.WriteLine(httpRequest.Headers);
+            client.Close();
         }
     }
 }
