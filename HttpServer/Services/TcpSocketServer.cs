@@ -67,9 +67,10 @@ namespace HttpServer.Services
                 dataReceived.AddRange(buffer);
             }
             HttpRequest httpRequest = _httpParser.ParseRequest(dataReceived.ToArray<byte>());
-            Console.WriteLine(httpRequest.Method);
-            Console.WriteLine(httpRequest.Version);
-            Console.WriteLine(httpRequest.Headers);
+            _logger.LogDebug("Request received" + Environment.NewLine +
+                            "Method: " + httpRequest.Method + Environment.NewLine +
+                            "Uri: " + httpRequest.Uri + Environment.NewLine +
+                            "Http Version: " + httpRequest.Version);
             client.Close();
         }
     }
