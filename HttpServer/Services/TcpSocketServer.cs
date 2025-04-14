@@ -67,10 +67,19 @@ namespace HttpServer.Services
                 dataReceived.AddRange(buffer);
             }
             HttpRequest httpRequest = _httpParser.ParseRequest(dataReceived.ToArray<byte>());
+
+
+            StringBuilder headers = new();
+            foreach(KeyValuePair<string, string> header in httpRequest.Headers)
+            {
+                headers.AppendLine(header.Key + ": " + header.Value);
+            }
             _logger.LogDebug("Request received" + Environment.NewLine +
                             "Method: " + httpRequest.Method + Environment.NewLine +
                             "Uri: " + httpRequest.Uri + Environment.NewLine +
-                            "Http Version: " + httpRequest.Version);
+                            "Http Version: " + httpRequest.Version + Environment.NewLine +
+                            headers.ToString()
+                            );
             client.Close();
         }
     }

@@ -36,8 +36,33 @@ namespace HttpServer.Internal.Http
             }
 
             httpRequest.Version = GetVersion(byteData);
+
+            httpRequest.Headers = GetHeaders(byteData);
+
             return httpRequest;
         }
+
+        private Dictionary<string, string> GetHeaders(Span<byte> byteData)
+        {
+            Dictionary<string, string> result = new();
+            int startIndex = byteData.IndexOf(ByteLF) + 1;
+
+            for (int i = startIndex; i < byteData.Length; i++)
+            {
+                if (byteData[i] == ByteCR && byteData[++i] == ByteLF)
+                {
+                    int lineLength = (i - startIndex) - 1;
+                    Span<byte> line = byteData.Slice(startIndex, lineLength);
+                    int colonIndex = line.IndexOf(ByteColon);
+                    string key = Encoding.UTF8.GetString(line.Slice(0, colonIndex));
+                    string value = Encoding.UTF8.GetString(line.Slice(colonIndex + 2));
+                    result.Add(key, value);
+                    startIndex = ++i;
+                }
+            }
+            return result;
+        }
+        
 
         private string GetVersion(Span<byte> byteData)
         {
